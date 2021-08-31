@@ -1,5 +1,6 @@
 from django.db.models import Count
 from django.shortcuts import render
+from django.http import HttpResponseNotFound
 
 from blog.models import Post, Tag
 
@@ -43,7 +44,12 @@ def index(request):
 
 def post_detail(request, slug):
     all_posts = Post.objects.prefetch_tags_and_author_with_comments_count()
-    post = all_posts.annotate(Count("likes")).get(slug=slug)
+
+    try:
+        post = all_posts.annotate(Count("likes")).get(slug=slug)
+    except Post.DoesNotExist:
+        return HttpResponseNotFound('<h1>Такой пост не найден</h1>')
+
     comments = post.comments.prefetch_related("author")
     serialized_comments = []
     for comment in comments:
